@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+  pg_access_node:
+    image: timescale/timescaledb:latest-pg15
+    container_name: pg_access_node
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./data/access_node:/var/lib/postgresql/data
+      - ./trust-all.sh:/docker-entrypoint-initdb.d/777_trust.sh
+      - ./unsafe-boost.sh:/docker-entrypoint-initdb.d/888_boost.sh
+      - ./init-access-node.sh:/docker-entrypoint-initdb.d/999_cluster.sh
+      - ./data/access_data:/tmp/data
+
+  pg_data_node_1:
+    image: timescale/timescaledb:latest-pg15
+    container_name: pg_data_node_1
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5433:5432'
+    volumes:
+      - ./data/data_node1:/var/lib/postgresql/data
+      - ./trust-all.sh:/docker-entrypoint-initdb.d/777_trust.sh
+      - ./unsafe-boost.sh:/docker-entrypoint-initdb.d/888_boost.sh
+      - ./init-data-node.sh:/docker-entrypoint-initdb.d/999_cluster.sh
+
+  pg_data_node_2:
+    image: timescale/timescaledb:latest-pg15
+    container_name: pg_data_node_2
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5434:5432'
+    volumes:
+      - ./data/data_node2:/var/lib/postgresql/data
+      - ./trust-all.sh:/docker-entrypoint-initdb.d/777_trust.sh
+      - ./unsafe-boost.sh:/docker-entrypoint-initdb.d/888_boost.sh
+      - ./init-data-node.sh:/docker-entrypoint-initdb.d/999_cluster.sh
+
+  pgadmin:
+    image: adminer:latest
+    container_name: adminer
+    restart: unless-stopped
+    environment:
+      - ADMINER_DESIGN='nette'
+      - ADMINER_DEFAULT_SERVER=pg_access_node
+    ports:
+      - 8080:8080
