@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  grafana:
+    image: grafana/grafana:main
+    ports:
+      - "3000:3000"
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  haproxy:
+    image: haproxy:lts-alpine3.18
+    ports:
+      - "8000:8000"
+      - "8404:8404"
+    volumes:
+      - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+  dummy-back:
+    image: dummy-back:latest
+    build: ./dummy-api
+    ports:
+      - 8080:80
