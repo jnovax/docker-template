@@ -1,0 +1,74 @@
+# To make it easier to self-host, we have a preset docker compose config that also
+# has a container with a Postgres instance running.
+# You can tweak around this file to match your instances
+version: "3.9"
+
+services:
+  # This service runs the backend app in the port 3170
+  hoppscotch-backend:
+    image: hoppscotch/hoppscotch-backend
+    container_name: hoppscotch-backend
+    env_file:
+      - ./.env
+    restart: always
+    environment:
+      # Edit the below line to match your PostgresDB URL if you have an outside DB (make sure to update the .env file as well)
+      - DATABASE_URL=postgresql://postgres:testpass@hoppscotch-db:5432/hoppscotch?connect_timeout=300
+      - PORT=3170
+    depends_on:
+      hoppscotch-db:
+        condition: service_healthy
+    ports:
+      - "3170:3170"
+
+  # The main hoppscotch frontend. This will be hosted at port 3000
+  # NOTE: To do TLS or play around with how the frontend is hosted, you can look into the Caddyfile for
+  #       the SH admin dashboard server at packages/hoppscotch-selfhost-web/Caddyfile
+  hoppscotch-frontend:
+    image: hoppscotch/hoppscotch-frontend
+    container_name: hoppscotch-frontend
+    env_file:
+      - ./.env
+    depends_on:
+      - hoppscotch-backend
+    ports:
+      - "3000:8080"
+
+  # The Self Host dashboard for managing the app. This will be hosted at port 3100
+  # NOTE: To do TLS or play around with how the app is hosted, you can look into the Caddyfile for
+  #       the SH admin dashboard server at packages/hoppscotch-sh-admin/Caddyfile
+  hoppscotch-admin:
+    image: hoppscotch/hoppscotch-admin
+    container_name: hoppscotch-admin
+    env_file:
+      - ./.env
+    depends_on:
+      - hoppscotch-backend
+    ports:
+      - "3100:8080"
+
+  # The preset DB service, you can delete/comment the below lines if
+  # you are using an external postgres instance
+  # This will be exposed at port 5432
+  hoppscotch-db:
+    image: postgres:15
+    user: postgres
+    environment:
+      # The default user defined by the docker image
+      POSTGRES_USER: postgres
+      # NOTE: Please UPDATE THIS PASSWORD!
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: hoppscotch
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "sh -c 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}'"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080

@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  dask-scheduler:
+    container_name: dask-scheduler
+    image: daskdev/dask:2023.10.0-py3.10
+    hostname: scheduler
+    ports:
+      - "8786:8786"
+      - "8787:8787"
+    command: ["dask-scheduler"]
+
+  dask-worker1:
+    image: daskdev/dask:2023.10.0-py3.10
+    command: ["dask-worker", "tcp://dask-scheduler:8786"]
+    # For Docker swarm you can specify multiple workers, this is ignored by `docker-compose up`
+    # deploy:
+    #   replicas: 2
+  dask-worker2:
+    image: daskdev/dask:2023.10.0-py3.10
+    command: ["dask-worker", "tcp://dask-scheduler:8786"]
+
+  notebook:
+    image: daskdev/dask-notebook:2023.10.0-py3.10
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./jupyterlab:/data
+    environment:
+      - DASK_SCHEDULER_ADDRESS="tcp://dask-scheduler:8786"
+      - GRANT_SUDO=yes
+
